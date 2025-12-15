@@ -18,7 +18,7 @@ K1p = 1
 n1p = 2
 # 2. Parameters
 kp_max = 2
-kp_min = 0.0002
+kp_min = 0.02
 a = 1
 b = 1
 e =  1
@@ -27,23 +27,40 @@ d = b / (a + b)
 f = e / (a + b + e)
 
 #withoutactivator1
-rate = (kp_max-kp_min)* (a * hill(total_activator3,K3p,n3p,1,0)) + kp_min
+rate1 = (kp_max-kp_min)* (a * hill(total_activator3,K3p,n3p,1,0)) + kp_min
 # # 3. 1 OR 3
-#rate = (kp_max-kp_min)*(c * hill(total_activator1,K1p,n1p,1,0) + d * hill(total_activator3,K3p,n3p,1,0)) + kp_min
+rate2 = (kp_max-kp_min)*(c * hill(total_activator1,K1p,n1p,1,0) + d * hill(total_activator3,K3p,n3p,1,0)) + kp_min
 
 # # 1 OR 3 independently also but also together.
+
 c = a / (a + b + e) 
 d = b / (a + b + e)
 f = e / (a + b + e)
-#rate =  (kp_max-kp_min)* (c * hill(total_activator1,K1p,n1p,1,0) + d * hill(total_activator3,K3p,n3p,1,0) + f * (hill(total_activator3,K3p,n3p,1,0) * hill(total_activator1,K1p,n1p,1,0)))+ kp_min
+
+rate3 =  (kp_max-kp_min)* (c * hill(total_activator1,K1p,n1p,1,0) + d * hill(total_activator3,K3p,n3p,1,0) + f * (hill(total_activator3,K3p,n3p,1,0) * hill(total_activator1,K1p,n1p,1,0)))+ kp_min
 
 # #1 AND 3
-#rate = (kp_max-kp_min)* e * (hill(total_activator3,K3p,n3p,1,0) * hill(total_activator1,K1p,n1p,1,0)) + kp_min
-# #FFL with OR
+
+rate4 = (kp_max-kp_min)* e * (hill(total_activator3,K3p,n3p,1,0) * hill(total_activator1,K1p,n1p,1,0)) + kp_min
+plt.plot(total_activator3, rate1, label='Single activator')
+plt.plot(total_activator3, rate2, label='OR')
+plt.plot(total_activator3, rate3, label='cooperative OR')
+plt.plot(total_activator3, rate4, label='AND')
+
+plt.xlabel('Activator3 conc')
+plt.ylabel('OFF to ON')
+plt.legend()
+#plt.savefig('/home/madhusud/modeling_gene_expression/modelA_ParameterPlots/Dilution/3regultormodels/without1.png', bbox_inches='tight')
+plt.show()
+#FFL with OR
 c = a / (a + b) 
 d = b / (a + b)
 # #total_activator1 = hill(total_activator3,K31,n31,1,0)
 # #rate =(kp_max-kp_min)*  (c * hill( total_activator1,K1p,n1p,1,0) + d * hill(total_activator3,K3p,n3p,1,0)) + kp_min
+
+## Cascade
+# total_activator1 = hill(total_activator3,K31,n31,1,0)
+# rate = (kp_max-kp_min) * (hill( total_activator1,K1p,n1p,1,0) + kp_min
 
 # #FFL with AND.
 # total_activator1 = hill(total_activator3,K31,n31,1,0)

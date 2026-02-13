@@ -40,13 +40,12 @@ f = e / (a + b + e)
 rate3 =  (kp_max-kp_min)* (c * hill(total_activator1,K1p,n1p,1,0) + d * hill(total_activator3,K3p,n3p,1,0) + f * (hill(total_activator3,K3p,n3p,1,0) * hill(total_activator1,K1p,n1p,1,0)))+ kp_min
 
 # #1 AND 3
-index90 = np.abs(rate1 - 0.9*kp_max).argmin()
-index10 = np.abs(rate1 - 0.1*kp_max).argmin()
-print(rate1)
-print(total_activator3)
-print(index10)
-print(index90)
-print(total_activator3[index90]/ total_activator3[index10])
+models=["AR_simple",'AR_dilution','AR_quadratic']
+for i in range(0,len(models)):
+ values = [AR,dilution,y_values] #y value ranges(rate1,rate2..)
+ index90 = np.abs(values[i]- 0.9*kA1_max).argmin()
+ index10 = np.abs(values[i] - 0.1*kA1_max).argmin()
+ print(f" EC90/EC10 of {models[i]} = {total_activator1[index90]/ total_activator1[index10]}")
 rate4 = (kp_max-kp_min)* e * (hill(total_activator3,K3p,n3p,1,0) * hill(total_activator1,K1p,n1p,1,0)) + kp_min
 plt.plot(total_activator3, rate1, label='Single activator')
 plt.plot(total_activator3, rate2, label='OR')

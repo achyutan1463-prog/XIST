@@ -1,0 +1,214 @@
+############################################
+# Python version of nucleosome simulation
+#
+# - Create directory data/
+# - Create File param.dat of following 5 lines:
+#
+# N 10
+# F 10
+# mu 0.666667
+# cycles 1000000
+# Nsigma 20
+#
+# - Run with command: python program.py
+############################################
+
+import math
+import random
+import time
+import os
+
+# Global state variables
+N = 0
+F = 0
+cycles = 0
+Nsigma = 0
+mu = 0.0
+sigma = 0.0
+Mtime = 0
+Atime = 0
+Utime = 0
+
+
+def drand():
+    """Equivalent to C's rand()/RAND_MAX — uniform float in [0, 1)"""
+    return random.random()
+
+
+def update(alpha, Nhist):
+    """
+    Update function: performs N micro-steps of the Monte Carlo simulation.
+    Each step:
+      1. Picks a random nucleosome (site1) and a different one (site2).
+      2. With prob (1-alpha): noise event on site1.
+      3. With prob alpha: recruitment event (site2 recruits site1).
+      4. Picks a third site (site3) for TF (transcription factor) action.
+    """
+    global Mtime, Atime, Utime, sigma
+
+    for _ in range(N):
+        # Select site1 randomly in [1..N]
+        site1 = int(math.floor(drand() * (N - 0.001) + 1.0))
+
+        # Select site2 != site1
+        site2 = site1
+        while site2 == site1:
+            site2 = int(math.floor(drand() * (N - 0.001) + 1.0))
+
+        # -------------------------
+        # Noise event (prob 1-alpha)
+        # -------------------------
+        if drand() < 1.0 - alpha:
+            if Nhist[site1] == 0:        # U state
+                if drand() < 0.5:        # U -> M
+                    Nhist[site1] = 1
+                    Mtime += 1
+                    Utime -= 1
+                else:                    # U -> A
+                    Nhist[site1] = -1
+                    Atime += 1
+                    Utime -= 1
+
+            elif Nhist[site1] == -1:     # A state
+                if drand() < 0.5:        # A -> U
+                    Nhist[site1] = 0
+                    Atime -= 1
+                    Utime += 1
+
+            elif Nhist[site1] == 1:      # M state
+                if drand() < 0.5:        # M -> U
+                    Nhist[site1] = 0
+                    Mtime -= 1
+                    Utime += 1
+
+        # -------------------------
+        # Recruitment event (prob alpha)
+        # -------------------------
+        elif Nhist[site2] != Nhist[site1] and Nhist[site2] != 0:
+            ftest = drand()
+
+            # M recruits U -> M with prob mu
+            if Nhist[site1] == 0 and Nhist[site2] == 1 and ftest < mu:
+                Nhist[site1] = 1
+                Mtime += 1
+                Utime -= 1
+
+            # A recruits U -> A with prob (1 - mu)
+            elif Nhist[site1] == 0 and Nhist[site2] == -1 and ftest >= mu:
+                Nhist[site1] = -1
+                Atime += 1
+                Utime -= 1
+
+            # M recruits A -> U with prob mu
+            elif Nhist[site1] == -1 and Nhist[site2] == 1 and ftest < mu:
+                Utime += 1
+                Atime -= 1
+                Nhist[site1] = 0
+
+            # A recruits M -> U with prob (1 - mu)
+            elif Nhist[site1] == 1 and Nhist[site2] == -1 and ftest >= mu:
+                Utime += 1
+                Mtime -= 1
+                Nhist[site1] = 0
+
+        # -------------------------
+        # TF action: site3, U -> A with prob sigma
+        # -------------------------
+        site3 = int(math.floor(drand() * (N - 0.001) + 1.0))
+        if Nhist[site3] == 0 and drand() < sigma:
+            Nhist[site3] = -1
+            Atime += 1
+            Utime -= 1
+
+
+def main():
+    global N, F, cycles, Nsigma, mu, sigma
+    global Mtime, Atime, Utime
+
+    # ----------------------------------------
+    # Reading Parameters from param.dat
+    # ----------------------------------------
+    with open("param.dat", "r") as pparam:
+        lines = pparam.readlines()
+
+    params = {}
+    for line in lines:
+        parts = line.strip().split()
+        if len(parts) == 2:
+            params[parts[0]] = parts[1]
+
+    N       = int(params["N"])
+    F       = int(params["F"])
+    mu      = float(params["mu"])
+    cycles  = int(params["cycles"])
+    Nsigma  = int(params["Nsigma"])
+
+    print(f"N {N}")
+    print(f"F {F}")
+    print(f"mu {mu:.6f}")
+    print(f"cycles {cycles}")
+    print(f"Nsigma {Nsigma}")
+
+    # ----------------------------------------
+    # Initialization
+    # ----------------------------------------
+    random.seed(int(time.time()))
+
+    alpha = F * 1.0 / (1.0 + F)
+
+    dir_name = "data/"
+    os.makedirs(dir_name, exist_ok=True)
+
+    sigma_file = f"{dir_name}SigmaF{F}mu{mu:.2f}N{N}.dat"
+    hist_file  = f"{dir_name}HistF{F}mu{mu:.2f}N{N}.dat"
+
+    with open(sigma_file, "w") as psigma, open(hist_file, "w") as phist:
+
+        for i in range(Nsigma + 1):
+            sigma = 0.01 * math.pow(10.0, i * 2.0 / Nsigma)
+
+            # Reset counters
+            Mtime = 0
+            Atime = 0
+            Utime = N
+            AvA   = 0
+            AvM   = 0
+
+            # Nucleosome state array: indices 1..N (index 0 unused, matches C++ 1-based)
+            Nhist = [0] * (N + 1)
+            histA = [0] * (N + 1)
+
+            # ----------------------------------------
+            # Warm-up: drive system to steady state
+            # ----------------------------------------
+            for _ in range(500):
+                update(alpha, Nhist)
+
+            # ----------------------------------------
+            # Main simulation loop
+            # ----------------------------------------
+            for _ in range(cycles):
+                update(alpha, Nhist)
+                AvA += Atime
+                AvM += Mtime
+                histA[Atime] += 1
+
+            # ----------------------------------------
+            # Write histogram data
+            # ----------------------------------------
+            for j in range(N + 1):
+                phist.write(f"{sigma:.6f} {j * 1.0 / N:.6f} {histA[j] * 1.0 / (1.0 * N * cycles):.6f} \n")
+            phist.write("\n")
+            phist.flush()
+
+            # ----------------------------------------
+            # Write <A> vs sigma data
+            # ----------------------------------------
+            psigma.write(f"{sigma:.6f} {AvA * 1.0 / (1.0 * N * cycles):.6f}\n")
+            psigma.flush()
+
+            print(f"Done sigma={sigma:.6f}  <A>={AvA * 1.0 / (N * cycles):.4f}")
+
+
+if __name__ == "__main__":
+    main()

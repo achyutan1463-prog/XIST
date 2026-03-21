@@ -1,59 +1,151 @@
 import matplotlib.pyplot as plt
 import numpy as np
-
-import matplotlib.pyplot as plt
-import numpy as np
+#import numdifftools as nd
 
 def hill(total_activator,K,n,kmax,kmin):
  return (kmax - kmin)*(total_activator**n)/(total_activator**n + K**n) + kmin
+x = np.linspace(0, 1000, 100000)
+y = np.linspace(0, 1000, 100000)
 
-x = 1
-y = np.linspace(0, 10, 100)
 total_activator1, total_activator3 = x,y
 K31 = 1
-n31 = 2
-K3p = 1
-n3p = 2
+n31 = 1
+K3p = 0.2
+n3p = 3
 K1p = 1
-n1p = 2
+n1p = 3
+gamma=1
+R=0.5
+Kd = 0.01
 # 2. Parameters
 kp_max = 1
 kp_min = 0
 a = 1
 b = 1
-e =  1
+e = 1
 c = a / (a + b) 
 d = b / (a + b)
-f = e / (a + b + e)
-
 #withoutactivator1
-rate1 = (kp_max-kp_min)* (a * hill(total_activator3,K3p,n3p,1,0)) + kp_min
+single7 = (hill(total_activator1,K1p,6,1,0))
+single2 = (hill(total_activator1,K1p,2,1,0))
+cascade= (total_activator1)**(n1p*n3p) / ((gamma**n3p) * (K3p**n3p)*((K1p**n1p) + (total_activator1)**n1p)**n3p +(total_activator1)**(n1p*n3p))
 # # 3. 1 OR 3
+rate8 = (kp_max-kp_min) * (hill(total_activator3/2,K3p,n3p,1,0)) + kp_min
 rate2 = (kp_max-kp_min)*(c * hill(total_activator1,K1p,n1p,1,0) + d * hill(total_activator3,K3p,n3p,1,0)) + kp_min
-
+Rtotal = R
+freeA1=(total_activator1-Kd-Rtotal + ((total_activator1-Kd-Rtotal)**2 + 4*Kd* total_activator1)**0.5)/2
+AR =  (freeA1**n1p) / ((K1p**n1p) + (freeA1**n1p))
 # # 1 OR 3 independently also but also together.
-
+e = 1
 c = a / (a + b + e) 
 d = b / (a + b + e)
 f = e / (a + b + e)
+m = 1
+rate3 = (kp_max-kp_min)* (c * hill(total_activator1,K1p,n1p,1,0) + d * hill(total_activator3,K3p,n3p,1,0) + f * (hill(total_activator3,K3p,n3p,1,0) * hill(total_activator1,K1p,n1p,1,0)))+ kp_min
+#Cooperative OR but with complex.
+rate4 = (kp_max-kp_min)* ((c * hill(total_activator1,K1p,n1p,1,0)) + d* hill(total_activator3,K3p,n3p,1,0) +  f*(hill(total_activator3*total_activator1,K3p,m,1,0)))+ kp_min
+# #1 AND 3 as a complex.
+Dimer =hill(total_activator3*total_activator1,K1p,n1p,1,0) 
+# #1 AND 3.
+rate6 = (kp_max-kp_min) * (hill(total_activator3,K3p,n3p,1,0) * hill(total_activator1,K1p,n1p,1,0)) + kp_min
+#dimer with df.
+rate7 =(kp_max-kp_min) * hill((total_activator3)/2 *(total_activator1)/2,K3p,m,1,0) + kp_min 
 
-rate3 =  (kp_max-kp_min)* (c * hill(total_activator1,K1p,n1p,1,0) + d * hill(total_activator3,K3p,n3p,1,0) + f * (hill(total_activator3,K3p,n3p,1,0) * hill(total_activator1,K1p,n1p,1,0)))+ kp_min
+# # SLOPE
+# def hill_scalar(A):
+#     #return A**n3p / (K3p**n3p + A**n3p) #one activator
+#     #return c * (A**n1p / (K1p**n1p + A**n1p)) + d * (A**n3p / (K3p**n3p + A**n3p)) # 1 OR 3
+#     #return c * (A**n1p / (K1p**n1p + A**n1p))  + d * (A**n3p / (K3p**n3p + A**n3p)) + f * (A**n3p / (K3p**n3p + A**n3p)) * (A**n1p / (K1p**n1p + A**n1p))# 1 OR 3 independently but also together.
+#     #return c * (A**n1p / (K1p**n1p + A**n1p))  + d * (A**n3p / (K3p**n3p + A**n3p)) + f * ((A*A)**m / (K1p**m+ (A*A)**m)) ##OR + complex
+#     return ((A*A)**m / (K1p**m+ (A*A)**m)) #as a dimer
+#     #return ((A**n3p / (K3p**n3p + A**n3p)) * (A**n1p / (K1p**n1p + A**n1p))) #AND
+# deriv = nd.Derivative(hill_scalar)
+# dH_dA = np.array([deriv(a) for a in x])
+# print(max(dH_dA))
+# SLOPE
+# def hill_scalar(A):
+#     # one activator
+#     Single_activator = A**n3p / (K3p**n3p + A**n3p)
 
-# #1 AND 3
-models=["AR_simple",'AR_dilution','AR_quadratic']
+#     # 1 OR 3
+#     OR = 0.5 * (A**n1p / (K1p**n1p + A**n1p)) \
+#            + 0.5 * (A**n3p / (K3p**n3p + A**n3p))
+
+#     # 1 OR 3 independently but also together
+#     Cooperative_OR = 0.33 * (A**n1p / (K1p**n1p + A**n1p)) \
+#            + 0.33 * (A**n3p / (K3p**n3p + A**n3p)) \
+#            + 0.33 * (A**n3p / (K3p**n3p + A**n3p)) * (A**n1p / (K1p**n1p + A**n1p))
+
+#     # OR + complex
+#     OR_Dimer = 0.33 * (A**n1p / (K1p**n1p + A**n1p)) \
+#                + 0.33 * (A**n3p / (K3p**n3p + A**n3p)) \
+#                + 0.33 * ((A*A)**m / (K1p**m + (A*A)**m))
+
+#     # as a dimer
+#     Dimer =((A)**(2*m)) / (K1p**(2*m) + (A)**(2*m))
+
+#     # AND
+#     AND = (A**n3p / (K3p**n3p + A**n3p)) * (A**n1p / (K1p**n1p + A**n1p))
+
+#     z = [Single_activator, OR, Cooperative_OR, OR_Dimer, Dimer, AND]
+#     return z
+
+# n_outputs = len(hill_scalar(x[0]))
+
+# labels = [
+#     'Single_activator',
+#     'OR',
+#     'Cooperative_OR',
+#     'OR_Dimer',
+#     'Dimer',
+#     'AND'
+# ]
+
+# for i in range(n_outputs):
+#     deriv = nd.Derivative(lambda A: hill_scalar(A)[i], method='central', step=1e-6)
+#     dH_dA = deriv(1)
+#     print(f'{labels[i]} = {(dH_dA)}')
+
+models=["Single activator","AR",'Dimer','Cascade']
 for i in range(0,len(models)):
- values = [AR,dilution,y_values] #y value ranges(rate1,rate2..)
- index90 = np.abs(values[i]- 0.9*kA1_max).argmin()
- index10 = np.abs(values[i] - 0.1*kA1_max).argmin()
+ values = [single2,AR,Dimer,cascade] #y value ranges(rate1,rate2..)
+ actual_max = np.max(values[i])
+ index90 = np.abs(values[i]- 0.9* actual_max).argmin()
+ index10 = np.abs(values[i] - 0.1* actual_max).argmin()
  print(f" EC90/EC10 of {models[i]} = {total_activator1[index90]/ total_activator1[index10]}")
-rate4 = (kp_max-kp_min)* e * (hill(total_activator3,K3p,n3p,1,0) * hill(total_activator1,K1p,n1p,1,0)) + kp_min
-plt.plot(total_activator3, rate1, label='Single activator')
-plt.plot(total_activator3, rate2, label='OR')
-plt.plot(total_activator3, rate3, label='cooperative OR')
-plt.plot(total_activator3, rate4, label='AND')
 
-plt.xlabel('Activator3 conc')
+plt.plot(total_activator1, single2, label='Single,n=2',color = 'green')
+# Find indices where Y is closest to 0.1 and 0.9
+idx_01 = (np.abs(single2 - 0.1)).argmin()
+idx_09 = (np.abs(single2 - 0.9)).argmin()
+plt.scatter(total_activator1[idx_01], single2[idx_01], color='green', marker='.', s=100)
+plt.scatter(total_activator1[idx_09], single2[idx_09], color='green', marker='.', s=100)
+
+plt.plot(total_activator1, single7, label='Single,n=6',color = 'blue')
+idx_01 = (np.abs(single7 - 0.1)).argmin()
+idx_09 = (np.abs(single7 - 0.9)).argmin()
+plt.scatter(total_activator1[idx_01], single7[idx_01], color='blue', marker='.', s=100)
+plt.scatter(total_activator1[idx_09], single7[idx_09], color='blue', marker='.', s=100)
+#plt.plot(total_activator3, rate8, label='Single activator with df',color = 'magenta')
+# plt.plot(total_activator3, rate2, label='OR',color = 'blue',dashes = [2,2])
+# plt.plot(total_activator3, rate3, label='cooperative OR',color = 'red')
+# plt.plot(total_activator3, rate4, label='cooperative OR w/ complex',color = 'pink')
+#plt.plot(total_activator1, Dimer, label='Dimer',color = 'orange')
+# plt.plot(total_activator1, cascade, label='Cascade,n=3',color = 'black') #overlapping with single activator
+# idx_01 = (np.abs(cascade - 0.1)).argmin()
+# idx_09 = (np.abs(cascade - 0.9)).argmin()
+# plt.scatter(total_activator1[idx_01], cascade[idx_01], color='black', marker='.', s=100)
+# plt.scatter(total_activator1[idx_09], cascade[idx_09], color='black', marker='.', s=100)
+
+# plt.plot(total_activator1, AR, label='AR,n=3',color = 'magenta')
+# idx_01 = (np.abs(AR - 0.1)).argmin()
+# idx_09 = (np.abs(AR - 0.9)).argmin()
+# plt.scatter(total_activator1[idx_01], AR[idx_01], color='magenta', marker='.', s=100)
+# plt.scatter(total_activator1[idx_09], AR[idx_09], color='magenta', marker='.', s=100)\
+
+plt.xlabel('Activator concentration')
 plt.ylabel('OFF to ON')
+plt.xlim(0, 4) # Adjust the 10 to whatever looks best!
 plt.legend()
 #plt.savefig('/home/madhusud/modeling_gene_expression/modelA_ParameterPlots/Dilution/3regultormodels/without1.png', bbox_inches='tight')
 plt.show()
@@ -65,7 +157,7 @@ d = b / (a + b)
 
 ## Cascade
 # total_activator1 = hill(total_activator3,K31,n31,1,0)
-# rate = (kp_max-kp_min) * (hill( total_activator1,K1p,n1p,1,0) + kp_min
+#cascade= hill(hill(total_activator1,K1p,n1p,1,0)/ gamma_A2,K3p,m,1,0)
 
 # #FFL with AND.
 # total_activator1 = hill(total_activator3,K31,n31,1,0)
